@@ -1,32 +1,211 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>My Telegram Mini-App</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body { margin: 0; padding: 20px; background: var(--tg-theme-bg-color); }
-    h1 { color: var(--tg-theme-text-color); }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+
+        .card {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: white;
+        }
+
+        .marked {
+            background-color: #90EE90;
+        }
+
+        .header {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #called-numbers {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Hello, Telegram!</h1>
-  <button onclick="sendData()">Send Data to Bot</button>
-  <script>
-    const tg = window.Telegram.WebApp;
+    <h1>BINGO</h1>
+    <div class="card" id="card"></div>
+    <div class="controls">
+        <button onclick="generateNewCard()">New Card</button>
+        <button onclick="startAutoCall()">Start Game</button>
+    </div>
+    <div id="called-numbers"></div>
 
-    // Initialize the app
-    tg.expand(); // Expand the app to full screen
-    tg.ready(); // Notify Telegram the app is ready
+    <script>
+        let calledNumbers = [];
+        let autoCallInterval;
 
-    // Access user data
-    const user = tg.initDataUnsafe.user;
-    console.log("User ID:", user?.id);
+        function generateBingoCard() {
+            const card = document.getElementById('card');
+            card.innerHTML = '';
+            
+            // Create columns for B-I-N-G-O
+            const ranges = {
+                B: [1, 15],
+                I: [16, 30],
+                N: [31, 45],
+                G: [46, 60],
+                O: [61, 75]
+            };
 
-    // Send data back to the bot
-    function sendData() {
-      tg.sendData(JSON.stringify({ action: "button_click" }));
-      tg.close(); // Close the app
-    }
-  </script>
+            // Generate numbers for each column
+            Object.entries(ranges).forEach(([letter, [min, max]]) => {
+                const columnNumbers = [];
+                while (columnNumbers.length < 5) {
+                    const num = Math.floor(Math.random() * (max - min + 1)) + min;
+                    if (!columnNumbers.includes(num)) columnNumbers.push(num);
+                }
+                columnNumbers.sort((a, b) => a - b);
+                
+                // Create cells for the column
+                columnNumbers.forEach((num, index) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.textContent = letter === 'N' && index === 2 ? 'FREE' : num;
+                    if (letter === 'N' && index === 2) {
+                        cell.classList.add('marked');
+                    }
+                    cell.onclick = () => toggleMark(cell);
+                    card.appendChild(cell);
+                });
+            });
+        }
+
+        function toggleMark(cell) {
+            cell.classList.toggle('marked');
+            checkWin();
+        }
+
+        function checkWin() {
+            const cells = document.getElementsByClassName('cell');
+            
+            // Check rows
+            for (let i = 0; i < 5; i++) {
+                if (checkLine([0+i*5, 1+i*5, 2+i*5, 3+i*5, 4+i*5])) return true;
+            }
+
+            // Check columns
+            for (let i = 0; i < 5; i++) {
+                if (checkLine([i, i+5, i+10, i+15, i+20])) return true;
+            }
+
+            // Check diagonals
+            if (checkLine([0, 6, 12, 18, 24])) return true;
+            if (checkLine([4, 8, 12, 16, 20])) return true;
+
+            // Check four corners
+            if ([0, 4, 20, 24].every(index => cells[index].classList.contains('marked'))) {
+                showWin();
+                return true;
+            }
+
+            return false;
+        }
+
+        function checkLine(indexes) {
+            const cells = document.getElementsByClassName('cell');
+            if (indexes.every(index => 
+                cells[index].classList.contains('marked') || 
+                cells[index].textContent === 'FREE')) {
+                showWin();
+                return true;
+            }
+            return false;
+        }
+
+        function showWin() {
+            clearInterval(autoCallInterval);
+            alert('BINGO! You won!');
+        }
+
+        function generateNewCard() {
+            clearInterval(autoCallInterval);
+            calledNumbers = [];
+            document.getElementById('called-numbers').textContent = '';
+            generateBingoCard();
+        }
+
+        function startAutoCall() {
+            clearInterval(autoCallInterval);
+            calledNumbers = [];
+            document.getElementById('called-numbers').textContent = '';
+            autoCallInterval = setInterval(callNumber, 1500);
+        }
+
+        function callNumber() {
+            if (calledNumbers.length >= 75) {
+                clearInterval(autoCallInterval);
+                return;
+            }
+
+            let num;
+            do {
+                num = Math.floor(Math.random() * 75) + 1;
+            } while (calledNumbers.includes(num));
+
+            calledNumbers.push(num);
+            const calledDiv = document.getElementById('called-numbers');
+            calledDiv.textContent = `Called Numbers: ${calledNumbers.join(', ')}`;
+
+            // Mark number on card if present
+            const cells = document.getElementsByClassName('cell');
+            Array.from(cells).forEach(cell => {
+                if (parseInt(cell.textContent) === num) {
+                    cell.classList.add('marked');
+                    checkWin();
+                }
+            });
+        }
+
+        // Initial card generation
+        generateBingoCard();
+    </script>
 </body>
 </html>
