@@ -1,211 +1,158 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bingo Game</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #f0f0f0;
-        }
+<title>Addis Bingo</title>
+<style>
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background: linear-gradient(135deg, #e0c2ff, #d2aef7); /* Gradient background */
+}
 
-        .card {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-            background-color: white;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
+.div-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 350px; /* Adjusted width */
+    text-align: center;
+}
 
-        .cell {
-            width: 60px;
-            height: 60px;
-            border: 1px solid #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            cursor: pointer;
-            background-color: white;
-        }
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
 
-        .marked {
-            background-color: #90EE90;
-        }
+.header h2 {
+    margin: 0;
+}
 
-        .header {
-            text-align: center;
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
+.header button {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+}
 
-        .controls {
-            margin: 20px 0;
-        }
+.info {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
 
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
+.info div {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 8px;
+}
 
-        button:hover {
-            background-color: #45a049;
-        }
+.grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 5px;
+    margin-bottom: 20px;
+}
 
-        #called-numbers {
-            margin-top: 20px;
-            font-size: 18px;
-        }
-    </style>
+.grid-item {
+    background-color: #e8e8e8;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.grid-item.selected {
+    background-color: #a0f0a0;
+}
+
+.buttons {
+    display: flex;
+    justify-content: space-around;
+}
+
+.buttons button {
+    background-color: #6a96ff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.buttons button:last-child {
+    background-color: #ff9900;
+}
+</style>
 </head>
 <body>
-    <h1>BINGO</h1>
-    <div class="card" id="card"></div>
-    <div class="controls">
-        <button onclick="generateNewCard()">New Card</button>
-        <button onclick="startAutoCall()">Start Game</button>
+
+<div class="div-container">
+    <div class="header">
+        <button onclick="closeGame()">✕</button>
+        <h2>Addis Bingo</h2>
+        <button onclick="showOptions()">...</button>
     </div>
-    <div id="called-numbers"></div>
 
-    <script>
-        let calledNumbers = [];
-        let autoCallInterval;
+    <div class="info">
+        <div>Wallet<br>50.00</div>
+        <div>Active Game<br>3</div>
+        <div>Stake<br>10</div>
+    </div>
 
-        function generateBingoCard() {
-            const card = document.getElementById('card');
-            card.innerHTML = '';
-            
-            // Create columns for B-I-N-G-O
-            const ranges = {
-                B: [1, 15],
-                I: [16, 30],
-                N: [31, 45],
-                G: [46, 60],
-                O: [61, 75]
-            };
+    <div class="grid">
+        </div>
 
-            // Generate numbers for each column
-            Object.entries(ranges).forEach(([letter, [min, max]]) => {
-                const columnNumbers = [];
-                while (columnNumbers.length < 5) {
-                    const num = Math.floor(Math.random() * (max - min + 1)) + min;
-                    if (!columnNumbers.includes(num)) columnNumbers.push(num);
-                }
-                columnNumbers.sort((a, b) => a - b);
-                
-                // Create cells for the column
-                columnNumbers.forEach((num, index) => {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.textContent = letter === 'N' && index === 2 ? 'FREE' : num;
-                    if (letter === 'N' && index === 2) {
-                        cell.classList.add('marked');
-                    }
-                    cell.onclick = () => toggleMark(cell);
-                    card.appendChild(cell);
-                });
+    <div class="buttons">
+        <button onclick="refreshGrid()">Refresh</button>
+        <button onclick="startGame()">Start game</button>
+    </div>
+</div>
+
+<script>
+    const grid = document.querySelector('.grid');
+    const numbers = Array.from({ length: 100 }, (_, i) => i + 1);
+
+    function populateGrid() {
+        grid.innerHTML = '';
+        numbers.forEach(num => {
+            const item = document.createElement('div');
+            item.classList.add('grid-item');
+            item.textContent = num;
+            item.addEventListener('click', () => {
+                item.classList.toggle('selected');
             });
-        }
+            grid.appendChild(item);
+        });
+    }
 
-        function toggleMark(cell) {
-            cell.classList.toggle('marked');
-            checkWin();
-        }
+    function refreshGrid() {
+        populateGrid();
+    }
 
-        function checkWin() {
-            const cells = document.getElementsByClassName('cell');
-            
-            // Check rows
-            for (let i = 0; i < 5; i++) {
-                if (checkLine([0+i*5, 1+i*5, 2+i*5, 3+i*5, 4+i*5])) return true;
-            }
+    function startGame() {
+        // Implement game logic here
+        alert("Game started!");
+    }
 
-            // Check columns
-            for (let i = 0; i < 5; i++) {
-                if (checkLine([i, i+5, i+10, i+15, i+20])) return true;
-            }
+    function closeGame() {
+        // Implement close game logic here
+        alert("Game closed!");
+    }
 
-            // Check diagonals
-            if (checkLine([0, 6, 12, 18, 24])) return true;
-            if (checkLine([4, 8, 12, 16, 20])) return true;
+    function showOptions() {
+        // Implement options logic here
+        alert("Options shown!");
+    }
 
-            // Check four corners
-            if ([0, 4, 20, 24].every(index => cells[index].classList.contains('marked'))) {
-                showWin();
-                return true;
-            }
+    populateGrid(); // Initialize the grid
+</script>
 
-            return false;
-        }
-
-        function checkLine(indexes) {
-            const cells = document.getElementsByClassName('cell');
-            if (indexes.every(index => 
-                cells[index].classList.contains('marked') || 
-                cells[index].textContent === 'FREE')) {
-                showWin();
-                return true;
-            }
-            return false;
-        }
-
-        function showWin() {
-            clearInterval(autoCallInterval);
-            alert('BINGO! You won!');
-        }
-
-        function generateNewCard() {
-            clearInterval(autoCallInterval);
-            calledNumbers = [];
-            document.getElementById('called-numbers').textContent = '';
-            generateBingoCard();
-        }
-
-        function startAutoCall() {
-            clearInterval(autoCallInterval);
-            calledNumbers = [];
-            document.getElementById('called-numbers').textContent = '';
-            autoCallInterval = setInterval(callNumber, 2000);
-        }
-
-        function callNumber() {
-            if (calledNumbers.length >= 75) {
-                clearInterval(autoCallInterval);
-                return;
-            }
-
-            let num;
-            do {
-                num = Math.floor(Math.random() * 75) + 1;
-            } while (calledNumbers.includes(num));
-
-            calledNumbers.push(num);
-            const calledDiv = document.getElementById('called-numbers');
-            calledDiv.textContent = `Called Numbers: ${calledNumbers.join(', ')}`;
-
-            // Mark number on card if present
-            const cells = document.getElementsByClassName('cell');
-            Array.from(cells).forEach(cell => {
-                if (parseInt(cell.textContent) === num) {
-                    cell.classList.add('marked');
-                    checkWin();
-                }
-            });
-        }
-
-        // Initial card generation
-        generateBingoCard();
-    </script>
 </body>
 </html>
