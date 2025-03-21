@@ -1,263 +1,51 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Addis Bingo</title>
-<style>
-body {
-    font-family: sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-    background: linear-gradient(135deg, #e0c2ff, #d2aef7);
-}
-
-.div-container {
-    background-color: white;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 350px;
-    text-align: center;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.header h2 {
-    margin: 0;
-}
-
-.header button {
-    background: none;
-    border: none;
-    font-size: 1.5em;
-    cursor: pointer;
-}
-
-.info {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.info div {
-    background-color: #f0f0f0;
-    padding: 10px;
-    border-radius: 8px;
-}
-
-.grid {
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    gap: 5px;
-    margin-bottom: 20px;
-}
-
-.grid-item {
-    background-color: #e8e8e8;
-    padding: 10px;
-    border-radius: 5px;
-    text-align: center;
-    cursor: pointer;
-}
-
-.grid-item.selected {
-    background-color: #a0f0a0;
-}
-
-.buttons {
-    display: flex;
-    justify-content: space-around;
-}
-
-.buttons button {
-    background-color: #6a96ff;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.buttons button:last-child {
-    background-color: #ff9900;
-}
-
-.options-menu {
-    position: absolute;
-    top: 50px;
-    right: 20px;
-    background: white;
-    border: 1px solid #ccc;
-    padding: 10px;
-    border-radius: 5px;
-    display: none;
-}
-
-.options-menu button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 5px;
-    border: none;
-    background: none;
-    cursor: pointer;
-}
-
-.drawn-numbers {
-    margin-top: 20px;
-    text-align: center;
-}
-</style>
+    <title>Addis Bingo</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<div class="div-container">
-    <div class="header">
-        <button onclick="closeGame()">✕</button>
-        <h2>Addis Bingo</h2>
-        <button onclick="toggleOptions()">...</button>
+    <div class="container">
+        <div class="header">
+            <button class="close-btn">Close</button>
+            <div class="title">Addis Bingo <span class="subtitle">mini app</span></div>
+            <button class="options-btn">...</button>
+        </div>
+        <div class="info-panel">
+            <div class="info-item">Game <span id="game-id">YW9403</span></div>
+            <div class="info-item">Derash</div>
+            <div class="info-item">Bonus <span id="bonus">0</span></div>
+            <div class="info-item">Players <span id="players">1</span></div>
+            <div class="info-item">Bet <span id="bet">0</span></div>
+            <div class="info-item">Call <span id="call">0</span></div>
+        </div>
+        <div class="countdown">
+            Count Down <span id="timer">28</span>
+        </div>
+        <div class="current-call">
+            Current Call <span id="called-number">-</span>
+        </div>
+        <div class="bingo-boards">
+            <div class="bingo-board" id="main-board">
+                <div class="board-header">
+                    <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
+                </div>
+                <div class="board-numbers"></div>
+            </div>
+            <div class="bingo-board" id="player-board">
+                <div class="board-header">
+                    <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
+                </div>
+                <div class="board-numbers"></div>
+            </div>
+        </div>
+        <div class="board-number">Board number <span id="current-board-number">58</span></div>
+        <button class="bingo-btn">BINGO!</button>
+        <div class="controls">
+            <button class="refresh-btn">Refresh</button>
+            <button class="leave-btn">Leave</button>
+        </div>
     </div>
-
-    <div class="options-menu" id="optionsMenu">
-        <button onclick="resetWallet()">Reset Wallet</button>
-        <button onclick="clearSelected()">Clear Selected</button>
-    </div>
-
-    <div class="info">
-        <div id="wallet">Wallet<br>50.00</div>
-        <div id="activeGame">Active Game<br>3</div>
-        <div id="stake">Stake<br>10</div>
-    </div>
-
-    <div class="grid">
-    </div>
-
-    <div class="buttons">
-        <button onclick="refreshGrid()">Refresh</button>
-        <button onclick="startGame()">Start game</button>
-    </div>
-
-    <div class="drawn-numbers" id="drawnNumbers"></div>
-</div>
-
-<script>
-    const grid = document.querySelector('.grid');
-    const numbers = Array.from({ length: 100 }, (_, i) => i + 1);
-    let wallet = 50;
-    let activeGames = 3;
-    let stake = 10;
-    let selectedNumbers = [];
-    let drawnNumbers = [];
-
-    function updateInfo() {
-        document.getElementById('wallet').innerHTML = `Wallet<br>${wallet.toFixed(2)}`;
-        document.getElementById('activeGame').innerHTML = `Active Game<br>${activeGames}`;
-        document.getElementById('stake').innerHTML = `Stake<br>${stake}`;
-    }
-
-    function populateGrid() {
-        grid.innerHTML = '';
-        numbers.forEach(num => {
-            const item = document.createElement('div');
-            item.classList.add('grid-item');
-            item.textContent = num;
-            item.addEventListener('click', () => {
-                item.classList.toggle('selected');
-                if (item.classList.contains('selected')) {
-                    selectedNumbers.push(num);
-                } else {
-                    selectedNumbers = selectedNumbers.filter(n => n !== num);
-                }
-            });
-            grid.appendChild(item);
-        });
-    }
-
-    function refreshGrid() {
-        populateGrid();
-        selectedNumbers = [];
-    }
-
-    function startGame() {
-        if (wallet < stake) {
-            alert("Insufficient funds!");
-            return;
-        }
-        if (activeGames <= 0) {
-            alert("No active games left!");
-            return;
-        }
-
-        wallet -= stake;
-        activeGames--;
-        drawnNumbers = [];
-        document.getElementById('drawnNumbers').innerHTML = '';
-
-        const interval = setInterval(() => {
-            if (drawnNumbers.length >= 25) { // Draw 25 numbers
-                clearInterval(interval);
-                checkWin();
-                return;
-            }
-            let num;
-            do {
-                num = Math.floor(Math.random() * 100) + 1;
-            } while (drawnNumbers.includes(num));
-            drawnNumbers.push(num);
-            document.getElementById('drawnNumbers').innerHTML += `${num} `;
-            const gridItems = document.querySelectorAll('.grid-item');
-            gridItems.forEach(item => {
-                if (parseInt(item.textContent) === num) {
-                    item.classList.add('selected');
-                }
-            });
-        }, 1000); // Draw a number every 1 second
-
-        updateInfo();
-    }
-
-    function checkWin() {
-        let matched = selectedNumbers.filter(num => drawnNumbers.includes(num));
-        if (matched.length >= 5) { // Example win condition: 5 matches
-            alert("You win!");
-            wallet += stake * 2; // Example: double the stake
-        } else {
-            alert("You lose!");
-        }
-        updateInfo();
-    }
-
-    function closeGame() {
-        alert("Game closed!");
-    }
-
-    function toggleOptions() {
-        const optionsMenu = document.getElementById('optionsMenu');
-        optionsMenu.style.display = optionsMenu.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function resetWallet() {
-        wallet = 50;
-        updateInfo();
-    }
-
-    function clearSelected() {
-        selectedNumbers = [];
-        const gridItems = document.querySelectorAll('.grid-item');
-        gridItems.forEach(item => item.classList.remove('selected'));
-    }
-
-    updateInfo();
-    populateGrid();
-</script>
-
+    <script src="script.js"></script>
 </body>
 </html>
