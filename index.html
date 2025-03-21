@@ -10,7 +10,7 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    background: linear-gradient(135deg, #e0c2ff, #d2aef7); /* Gradient background */
+    background: linear-gradient(135deg, #e0c2ff, #d2aef7);
 }
 
 .div-container {
@@ -18,7 +18,7 @@ body {
     padding: 20px;
     border-radius: 15px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 350px; /* Adjusted width */
+    width: 350px;
     text-align: center;
 }
 
@@ -89,6 +89,32 @@ body {
 .buttons button:last-child {
     background-color: #ff9900;
 }
+
+.options-menu {
+    position: absolute;
+    top: 50px;
+    right: 20px;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    display: none;
+}
+
+.options-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 5px;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.drawn-numbers {
+    margin-top: 20px;
+    text-align: center;
+}
 </style>
 </head>
 <body>
@@ -97,27 +123,45 @@ body {
     <div class="header">
         <button onclick="closeGame()">✕</button>
         <h2>Addis Bingo</h2>
-        <button onclick="showOptions()">...</button>
+        <button onclick="toggleOptions()">...</button>
+    </div>
+
+    <div class="options-menu" id="optionsMenu">
+        <button onclick="resetWallet()">Reset Wallet</button>
+        <button onclick="clearSelected()">Clear Selected</button>
     </div>
 
     <div class="info">
-        <div>Wallet<br>50.00</div>
-        <div>Active Game<br>3</div>
-        <div>Stake<br>10</div>
+        <div id="wallet">Wallet<br>50.00</div>
+        <div id="activeGame">Active Game<br>3</div>
+        <div id="stake">Stake<br>10</div>
     </div>
 
     <div class="grid">
-        </div>
+    </div>
 
     <div class="buttons">
         <button onclick="refreshGrid()">Refresh</button>
         <button onclick="startGame()">Start game</button>
     </div>
+
+    <div class="drawn-numbers" id="drawnNumbers"></div>
 </div>
 
 <script>
     const grid = document.querySelector('.grid');
     const numbers = Array.from({ length: 100 }, (_, i) => i + 1);
+    let wallet = 50;
+    let activeGames = 3;
+    let stake = 10;
+    let selectedNumbers = [];
+    let drawnNumbers = [];
+
+    function updateInfo() {
+        document.getElementById('wallet').innerHTML = `Wallet<br>${wallet.toFixed(2)}`;
+        document.getElementById('activeGame').innerHTML = `Active Game<br>${activeGames}`;
+        document.getElementById('stake').innerHTML = `Stake<br>${stake}`;
+    }
 
     function populateGrid() {
         grid.innerHTML = '';
@@ -127,6 +171,11 @@ body {
             item.textContent = num;
             item.addEventListener('click', () => {
                 item.classList.toggle('selected');
+                if (item.classList.contains('selected')) {
+                    selectedNumbers.push(num);
+                } else {
+                    selectedNumbers = selectedNumbers.filter(n => n !== num);
+                }
             });
             grid.appendChild(item);
         });
@@ -134,24 +183,80 @@ body {
 
     function refreshGrid() {
         populateGrid();
+        selectedNumbers = [];
     }
 
     function startGame() {
-        // Implement game logic here
-        alert("Game started!");
+        if (wallet < stake) {
+            alert("Insufficient funds!");
+            return;
+        }
+        if (activeGames <= 0) {
+            alert("No active games left!");
+            return;
+        }
+
+        wallet -= stake;
+        activeGames--;
+        drawnNumbers = [];
+        document.getElementById('drawnNumbers').innerHTML = '';
+
+        const interval = setInterval(() => {
+            if (drawnNumbers.length >= 25) { // Draw 25 numbers
+                clearInterval(interval);
+                checkWin();
+                return;
+            }
+            let num;
+            do {
+                num = Math.floor(Math.random() * 100) + 1;
+            } while (drawnNumbers.includes(num));
+            drawnNumbers.push(num);
+            document.getElementById('drawnNumbers').innerHTML += `${num} `;
+            const gridItems = document.querySelectorAll('.grid-item');
+            gridItems.forEach(item => {
+                if (parseInt(item.textContent) === num) {
+                    item.classList.add('selected');
+                }
+            });
+        }, 1000); // Draw a number every 1 second
+
+        updateInfo();
+    }
+
+    function checkWin() {
+        let matched = selectedNumbers.filter(num => drawnNumbers.includes(num));
+        if (matched.length >= 5) { // Example win condition: 5 matches
+            alert("You win!");
+            wallet += stake * 2; // Example: double the stake
+        } else {
+            alert("You lose!");
+        }
+        updateInfo();
     }
 
     function closeGame() {
-        // Implement close game logic here
         alert("Game closed!");
     }
 
-    function showOptions() {
-        // Implement options logic here
-        alert("Options shown!");
+    function toggleOptions() {
+        const optionsMenu = document.getElementById('optionsMenu');
+        optionsMenu.style.display = optionsMenu.style.display === 'block' ? 'none' : 'block';
     }
 
-    populateGrid(); // Initialize the grid
+    function resetWallet() {
+        wallet = 50;
+        updateInfo();
+    }
+
+    function clearSelected() {
+        selectedNumbers = [];
+        const gridItems = document.querySelectorAll('.grid-item');
+        gridItems.forEach(item => item.classList.remove('selected'));
+    }
+
+    updateInfo();
+    populateGrid();
 </script>
 
 </body>
